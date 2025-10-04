@@ -1,74 +1,101 @@
 import { SignInButton } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { Zap } from "lucide-react";
+import { Plus, Calendar, TrendingUp } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
-const usersQueryOptions = convexQuery(api.users.listUsers, {});
+const questionsQueryOptions = convexQuery(api.questions.list, {});
 
 export const Route = createFileRoute("/")({
-  loader: async ({ context: { queryClient } }) =>
-    await queryClient.ensureQueryData(usersQueryOptions),
+  loader: async ({ context: { queryClient } }) => {
+    if ((window as any).Clerk?.session) {
+      await queryClient.ensureQueryData(questionsQueryOptions);
+    }
+  },
   component: HomePage,
 });
 
 function HomePage() {
   return (
-    <div className="text-center">
-      <div className="not-prose flex justify-center mb-4">
-        <Zap className="w-16 h-16 text-primary" />
-      </div>
-      <h1>Fullstack Vibe Coding</h1>
-
+    <>
       <Unauthenticated>
-        <p>Sign in to see the list of users.</p>
-        <div className="not-prose mt-4">
-          <SignInButton mode="modal">
-            <button className="btn btn-primary btn-lg">Get Started</button>
-          </SignInButton>
+        <div className="text-center">
+          <div className="not-prose flex justify-center mb-4">
+            <TrendingUp className="w-16 h-16 text-primary" />
+          </div>
+          <h1>Calibrate</h1>
+          <p>Make accurate forecasts, earn clips 📎, and climb the leaderboard.</p>
+          <div className="not-prose mt-4">
+            <SignInButton mode="modal">
+              <button className="btn btn-primary btn-lg">Get Started</button>
+            </SignInButton>
+          </div>
         </div>
       </Unauthenticated>
 
       <Authenticated>
-        <UsersList />
+        <QuestionsList />
       </Authenticated>
-    </div>
+    </>
   );
 }
 
-function UsersList() {
-  const { data: users } = useSuspenseQuery(usersQueryOptions);
+function QuestionsList() {
+  const { data: questions } = useSuspenseQuery(questionsQueryOptions);
 
   return (
     <>
-      <h2>Users</h2>
+      <div className="not-prose flex justify-between items-center mb-6">
+        <h1 className="mt-0">Questions</h1>
+        <Link to="/questions/new">
+          <button className="btn btn-primary">
+            <Plus className="w-5 h-5" />
+            New Question
+          </button>
+        </Link>
+      </div>
 
-      {users.length === 0 ? (
+      {questions.length === 0 ? (
         <div className="not-prose">
-          <div className="p-8 bg-base-200 rounded-lg">
-            <p className="opacity-70">No users yet. You're the first!</p>
+          <div className="p-8 bg-base-200 rounded-lg text-center">
+            <p className="opacity-70">No questions yet. Create the first one!</p>
           </div>
         </div>
       ) : (
-        <div className="not-prose overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user._id}>
-                  <td>{user.name}</td>
-                  <td>{new Date(user._creationTime).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="not-prose space-y-4">
+          {questions.map((question) => (
+            <Link
+              key={question._id}
+              to="/questions/$id"
+              params={{ id: question._id }}
+              className="block"
+            >
+              <div className="card card-border bg-base-200 hover:bg-base-300 transition-colors">
+                <div className="card-body">
+                  <h3 className="card-title text-lg">{question.title}</h3>
+                  <p className="opacity-70 text-sm">{question.description}</p>
+                  <div className="flex gap-4 mt-2 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>Closes {new Date(question.closeTime).toLocaleDateString()}</span>
+                    </div>
+                    <div className="badge badge-primary">
+                      {question.type === "binary" ? "Yes/No" : "Numeric"}
+                    </div>
+                    <div className={`badge ${
+                      question.status === "open" ? "badge-success" :
+                      question.status === "closed" ? "badge-warning" :
+                      "badge-neutral"
+                    }`}>
+                      {question.status}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </>

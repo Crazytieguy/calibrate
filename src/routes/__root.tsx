@@ -6,8 +6,9 @@ import {
   useAuth as useClerkAuth,
   useUser,
 } from "@clerk/clerk-react";
+import { convexQuery } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Link,
   Outlet,
@@ -21,7 +22,7 @@ import {
   useMutation,
 } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { Menu } from "lucide-react";
+import { Menu, Paperclip } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
 
@@ -73,25 +74,37 @@ function RootComponent() {
                         to="/"
                         className="btn btn-ghost normal-case text-xl"
                       >
-                        Fullstack Vibe Coding
+                        Calibrate
                       </Link>
                     </div>
                     <div className="navbar-center hidden lg:flex">
-                      <nav className="flex">
+                      <nav className="flex gap-2">
                         <Link
                           to="/"
+                          className="btn btn-ghost"
+                          activeOptions={{ exact: true }}
+                          activeProps={{
+                            className: "btn btn-ghost btn-active",
+                          }}
+                        >
+                          Questions
+                        </Link>
+                        <Link
+                          to="/leaderboard"
                           className="btn btn-ghost"
                           activeProps={{
                             className: "btn btn-ghost btn-active",
                           }}
-                          onClick={() => setIsSidebarOpen(false)}
                         >
-                          Home
+                          Leaderboard
                         </Link>
                       </nav>
                     </div>
                     <div className="navbar-end">
-                      <UserButton />
+                      <ClipsBalance />
+                      <div className="ml-2">
+                        <UserButton />
+                      </div>
                     </div>
                   </header>
                   {/* Main content */}
@@ -99,7 +112,7 @@ function RootComponent() {
                     <Outlet />
                   </main>
                   <footer className="footer footer-center p-4 text-base-content">
-                    <p>© {new Date().getFullYear()} Fullstack Vibe Coding</p>
+                    <p>© {new Date().getFullYear()} Calibrate</p>
                   </footer>
                 </div>
                 {/* Sidebar content for mobile */}
@@ -117,12 +130,25 @@ function RootComponent() {
                           <Link
                             to="/"
                             onClick={() => setIsSidebarOpen(false)}
+                            activeOptions={{ exact: true }}
                             activeProps={{
                               className: "active",
                             }}
                             className="flex items-center p-2"
                           >
-                            Home
+                            Questions
+                          </Link>
+                        </li>
+                        <li>
+                          <Link
+                            to="/leaderboard"
+                            onClick={() => setIsSidebarOpen(false)}
+                            activeProps={{
+                              className: "active",
+                            }}
+                            className="flex items-center p-2"
+                          >
+                            Leaderboard
                           </Link>
                         </li>
                       </ul>
@@ -138,7 +164,7 @@ function RootComponent() {
               <header className="navbar bg-base-100 shadow-sm border-b border-base-300">
                 <div className="container mx-auto flex justify-between w-full">
                   <div className="navbar-start">
-                    <h1 className="font-semibold">Fullstack Vibe Coding</h1>
+                    <h1 className="font-semibold">Calibrate</h1>
                   </div>
                   <div className="navbar-end">
                     <SignInButton mode="modal">
@@ -158,7 +184,7 @@ function RootComponent() {
                 <Outlet />
               </main>
               <footer className="footer footer-center p-4 text-base-content">
-                <p>© {new Date().getFullYear()} Fullstack Vibe Coding</p>
+                <p>© {new Date().getFullYear()} Calibrate</p>
               </footer>
             </Unauthenticated>
           </div>
@@ -180,4 +206,18 @@ function EnsureUser() {
   }, [isLoaded, isSignedIn, user, ensureUser]);
 
   return null;
+}
+
+function ClipsBalance() {
+  const currentUserQueryOptions = convexQuery(api.users.getCurrentUser, {});
+  const { data: currentUser } = useSuspenseQuery(currentUserQueryOptions);
+
+  if (!currentUser) return null;
+
+  return (
+    <div className="flex items-center gap-1 px-3 py-1 bg-base-200 rounded-lg">
+      <Paperclip className="w-4 h-4" />
+      <span className="font-bold">{currentUser.clips}</span>
+    </div>
+  );
 }

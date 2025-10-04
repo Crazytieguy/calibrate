@@ -12,13 +12,7 @@ export async function getCurrentUserOrNull(ctx: QueryCtx | MutationCtx) {
     .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
     .unique();
 
-  if (!user) {
-    throw new ConvexError(
-      "Bug: User is authenticated with convex but is missing a record in the DB",
-    );
-  }
-
-  return user;
+  return user ?? null;
 }
 
 export async function getCurrentUserOrCrash(ctx: QueryCtx | MutationCtx) {
@@ -27,6 +21,8 @@ export async function getCurrentUserOrCrash(ctx: QueryCtx | MutationCtx) {
   if (!user) {
     throw new ConvexError("Not authenticated");
   }
+
+  return user;
 }
 
 export const ensureUser = mutation({
@@ -54,16 +50,31 @@ export const ensureUser = mutation({
     const userId = await ctx.db.insert("users", {
       clerkId: identity.subject,
       name: identity.name ?? undefined,
+      clips: 1000,
     });
 
     return await ctx.db.get(userId);
   },
 });
 
-export const listUsers = query({
+export const getCurrentUser = query({
+  args: {},
+  handler: async (ctx) => {
+    return await getCurrentUserOrNull(ctx);
+  },
+});
+
+export const getLeaderboard = query({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query("users").collect();
-    return users;
+    return users
+      .sort((a, b) => b.clips - a.clips)
+      .slice(0, 10)
+      .map((user, index) => ({
+        rank: index + 1,
+        name: user.name ?? "Anonymous",
+        clips: user.clips,
+      }));
   },
 });
