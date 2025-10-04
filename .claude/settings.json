@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:daisyui.com)",
+      "WebFetch(domain:docs.convex.dev)",
+      "WebFetch(domain:tanstack.com)",
+      "WebFetch(domain:zod.dev)",
+      "WebFetch(domain:clerk.com)",
+      "WebFetch(domain:stack.convex.dev)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(mkdir:*)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm test:e2e)",
+      "Bash(pnpx convex run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "mcp__ide__getDiagnostics",
+      "mcp__playwright"
+    ],
+    "deny": []
+  },
+  "enabledMcpjsonServers": ["playwright"],
+  "enableAllProjectMcpServers": true
+}
