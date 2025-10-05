@@ -27,20 +27,6 @@ export const submit = mutation({
       throw new Error("Probability must be between 1% and 99%");
     }
 
-    const existingForecast = await ctx.db
-      .query("forecasts")
-      .withIndex("by_question_and_user", (q) =>
-        q.eq("questionId", args.questionId).eq("userId", user._id)
-      )
-      .unique();
-
-    if (existingForecast) {
-      await ctx.db.patch(existingForecast._id, {
-        probability: args.probability,
-      });
-      return existingForecast._id;
-    }
-
     return await ctx.db.insert("forecasts", {
       questionId: args.questionId,
       userId: user._id,
@@ -59,7 +45,8 @@ export const getForQuestion = query({
       .withIndex("by_question_and_user", (q) =>
         q.eq("questionId", questionId).eq("userId", user._id)
       )
-      .unique();
+      .order("desc")
+      .first();
   },
 });
 
@@ -71,12 +58,20 @@ export const listForQuestion = query({
       .withIndex("by_question", (q) => q.eq("questionId", questionId))
       .collect();
 
+    const latestByUser = new Map();
+    for (const forecast of forecasts) {
+      const existing = latestByUser.get(forecast.userId);
+      if (!existing || forecast._creationTime > existing._creationTime) {
+        latestByUser.set(forecast.userId, forecast);
+      }
+    }
+
     return await Promise.all(
-      forecasts.map(async (forecast) => {
+      Array.from(latestByUser.values()).map(async (forecast) => {
         const user = await ctx.db.get(forecast.userId);
         return {
           ...forecast,
-          userName: user?.name ?? "Anonymous",
+          userName: user && "name" in user ? (user.name ?? "Anonymous") : "Anonymous",
         };
       })
     );
@@ -92,25 +87,61 @@ export const scoreForecasts = mutation({
       throw new Error("Question must be resolved to score forecasts");
     }
 
-    const forecasts = await ctx.db
+    const allForecasts = await ctx.db
       .query("forecasts")
       .withIndex("by_question", (q) => q.eq("questionId", questionId))
       .collect();
 
-    for (const forecast of forecasts) {
-      const p = forecast.probability / 100;
-      const outcomeProb = question.resolution ? p : (1 - p);
+    const forecastsByUser = new Map();
+    for (const forecast of allForecasts) {
+      if (!forecastsByUser.has(forecast.userId)) {
+        forecastsByUser.set(forecast.userId, []);
+      }
+      forecastsByUser.get(forecast.userId)!.push(forecast);
+    }
 
-      const logScore = Math.log2(outcomeProb) * 100 + 100;
-      const clipsChange = Math.round(logScore);
+    const resolutionTime = question.resolutionTime ?? Date.now();
 
-      await ctx.db.patch(forecast._id, {
-        score: logScore,
+    for (const [userId, userForecasts] of forecastsByUser) {
+      userForecasts.sort((a: any, b: any) => a._creationTime - b._creationTime);
+
+      let totalWeightedScore = 0;
+      let totalDuration = 0;
+
+      for (let i = 0; i < userForecasts.length; i++) {
+        const forecast = userForecasts[i];
+        const nextTime = i < userForecasts.length - 1
+          ? userForecasts[i + 1]._creationTime
+          : Math.min(question.closeTime, resolutionTime);
+
+        const duration = nextTime - forecast._creationTime;
+
+        if (duration > 0) {
+          const p = forecast.probability / 100;
+          const outcomeProb = question.resolution ? p : (1 - p);
+          const logScore = Math.log(outcomeProb);
+
+          totalWeightedScore += logScore * duration;
+          totalDuration += duration;
+        }
+      }
+
+      const baselineLogScore = Math.log(0.5);
+
+      const avgLogScore = totalDuration > 0 ? totalWeightedScore / totalDuration : 0;
+      const relativeScore = avgLogScore - baselineLogScore;
+
+      const scaledScore = relativeScore * 100;
+      const clipsChange = Math.round(scaledScore);
+
+      const latestForecast = userForecasts[userForecasts.length - 1];
+      await ctx.db.patch(latestForecast._id, {
+        score: scaledScore,
         clipsChange,
       });
 
-      const user = await ctx.db.get(forecast.userId);
-      if (user) {
+      const user = await ctx.db.get(userId);
+      if (user && "clips" in user) {
         await ctx.db.patch(user._id, {
           clips: user.clips + clipsChange,
         });
