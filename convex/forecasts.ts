@@ -5,9 +5,7 @@ import { getCurrentUserOrCrash } from "./users";
 export const submit = mutation({
   args: {
     questionId: v.id("questions"),
-    probability: v.optional(v.number()),
-    prediction: v.optional(v.number()),
-    confidence: v.number(),
+    probability: v.number(),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUserOrCrash(ctx);
@@ -25,6 +23,10 @@ export const submit = mutation({
       throw new Error("Question has closed");
     }
 
+    if (args.probability < 1 || args.probability > 99) {
+      throw new Error("Probability must be between 1% and 99%");
+    }
+
     const existingForecast = await ctx.db
       .query("forecasts")
       .withIndex("by_question_and_user", (q) =>
@@ -35,8 +37,6 @@ export const submit = mutation({
     if (existingForecast) {
       await ctx.db.patch(existingForecast._id, {
         probability: args.probability,
-        prediction: args.prediction,
-        confidence: args.confidence,
       });
       return existingForecast._id;
     }
@@ -45,8 +45,6 @@ export const submit = mutation({
       questionId: args.questionId,
       userId: user._id,
       probability: args.probability,
-      prediction: args.prediction,
-      confidence: args.confidence,
     });
   },
 });
@@ -100,30 +98,14 @@ export const scoreForecasts = mutation({
       .collect();
 
     for (const forecast of forecasts) {
-      let score = 0;
-      let clipsChange = 0;
+      const p = forecast.probability / 100;
+      const outcomeProb = question.resolution ? p : (1 - p);
 
-      if (question.type === "binary" && typeof question.resolution === "boolean") {
-        const prob = forecast.probability ?? 50;
-        const actualProb = question.resolution ? 100 : 0;
-        const error = Math.abs(prob - actualProb);
-        score = 100 - error;
-
-        const baseReward = (score / 100) * 100;
-        clipsChange = Math.round(baseReward * (forecast.confidence / 10));
-      } else if (question.type === "numeric" && typeof question.resolution === "number") {
-        const pred = forecast.prediction ?? ((question.minValue ?? 0) + (question.maxValue ?? 100)) / 2;
-        const range = (question.maxValue ?? 100) - (question.minValue ?? 0);
-        const error = Math.abs(pred - question.resolution);
-        const normalizedError = error / range;
-        score = Math.max(0, 100 * (1 - normalizedError));
-
-        const baseReward = (score / 100) * 100;
-        clipsChange = Math.round(baseReward * (forecast.confidence / 10));
-      }
+      const logScore = Math.log2(outcomeProb) * 100 + 100;
+      const clipsChange = Math.round(logScore);
 
       await ctx.db.patch(forecast._id, {
-        score,
+        score: logScore,
         clipsChange,
       });
 

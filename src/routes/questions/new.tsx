@@ -12,10 +12,7 @@ export const Route = createFileRoute("/questions/new")({
 const questionSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  type: z.enum(["binary", "numeric"]),
   closeTime: z.string().min(1, "Close date is required"),
-  minValue: z.number().optional(),
-  maxValue: z.number().optional(),
 });
 
 function NewQuestionPage() {
@@ -26,10 +23,7 @@ function NewQuestionPage() {
     defaultValues: {
       title: "",
       description: "",
-      type: "binary" as "binary" | "numeric",
       closeTime: "",
-      minValue: 0,
-      maxValue: 100,
     },
     validators: {
       onChange: questionSchema,
@@ -40,10 +34,7 @@ function NewQuestionPage() {
       await createQuestion({
         title: value.title,
         description: value.description,
-        type: value.type,
         closeTime: closeTimeMs,
-        minValue: value.type === "numeric" ? value.minValue : undefined,
-        maxValue: value.type === "numeric" ? value.maxValue : undefined,
       });
 
       void navigate({ to: "/" });
@@ -120,70 +111,6 @@ function NewQuestionPage() {
               </div>
             )}
           </form.Field>
-
-          <form.Field name="type">
-            {(field) => (
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Question Type</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={field.state.value}
-                  onChange={(e) =>
-                    field.handleChange(e.target.value as "binary" | "numeric")
-                  }
-                >
-                  <option value="binary">Yes/No (Binary)</option>
-                  <option value="numeric">Numeric Range</option>
-                </select>
-              </div>
-            )}
-          </form.Field>
-
-          <form.Subscribe selector={(state) => state.values.type}>
-            {(type) =>
-              type === "numeric" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="minValue">
-                    {(field) => (
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text">Minimum Value</span>
-                        </label>
-                        <input
-                          type="number"
-                          className="input input-bordered w-full"
-                          value={field.state.value}
-                          onChange={(e) =>
-                            field.handleChange(e.target.valueAsNumber)
-                          }
-                        />
-                      </div>
-                    )}
-                  </form.Field>
-
-                  <form.Field name="maxValue">
-                    {(field) => (
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text">Maximum Value</span>
-                        </label>
-                        <input
-                          type="number"
-                          className="input input-bordered w-full"
-                          value={field.state.value}
-                          onChange={(e) =>
-                            field.handleChange(e.target.valueAsNumber)
-                          }
-                        />
-                      </div>
-                    )}
-                  </form.Field>
-                </div>
-              )
-            }
-          </form.Subscribe>
 
           <form.Field name="closeTime">
             {(field) => (

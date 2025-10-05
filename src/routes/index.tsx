@@ -81,9 +81,6 @@ function QuestionsList() {
                       <Calendar className="w-4 h-4" />
                       <span>Closes {new Date(question.closeTime).toLocaleDateString()}</span>
                     </div>
-                    <div className="badge badge-primary">
-                      {question.type === "binary" ? "Yes/No" : "Numeric"}
-                    </div>
                     <div className={`badge ${
                       question.status === "open" ? "badge-success" :
                       question.status === "closed" ? "badge-warning" :

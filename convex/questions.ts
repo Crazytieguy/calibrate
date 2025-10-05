@@ -43,10 +43,7 @@ export const create = mutation({
   args: {
     title: v.string(),
     description: v.string(),
-    type: v.union(v.literal("binary"), v.literal("numeric")),
     closeTime: v.number(),
-    minValue: v.optional(v.number()),
-    maxValue: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUserOrCrash(ctx);
@@ -54,12 +51,9 @@ export const create = mutation({
     const questionId = await ctx.db.insert("questions", {
       title: args.title,
       description: args.description,
-      type: args.type,
       createdBy: user._id,
       status: "open",
       closeTime: args.closeTime,
-      minValue: args.minValue,
-      maxValue: args.maxValue,
     });
 
     return questionId;
@@ -69,7 +63,7 @@ export const create = mutation({
 export const resolve = mutation({
   args: {
     id: v.id("questions"),
-    resolution: v.union(v.boolean(), v.number()),
+    resolution: v.boolean(),
   },
   handler: async (ctx, { id, resolution }) => {
     await getCurrentUserOrCrash(ctx);

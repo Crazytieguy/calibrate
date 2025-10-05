@@ -11,7 +11,6 @@ export default defineSchema({
   questions: defineTable({
     title: v.string(),
     description: v.string(),
-    type: v.union(v.literal("binary"), v.literal("numeric")),
     createdBy: v.id("users"),
     status: v.union(
       v.literal("open"),
@@ -20,11 +19,7 @@ export default defineSchema({
     ),
     closeTime: v.number(),
     resolutionTime: v.optional(v.number()),
-    resolution: v.optional(
-      v.union(v.boolean(), v.number())
-    ),
-    minValue: v.optional(v.number()),
-    maxValue: v.optional(v.number()),
+    resolution: v.optional(v.boolean()),
   })
     .index("by_status", ["status"])
     .index("by_createdBy", ["createdBy"]),
@@ -32,9 +27,7 @@ export default defineSchema({
   forecasts: defineTable({
     questionId: v.id("questions"),
     userId: v.id("users"),
-    probability: v.optional(v.number()),
-    prediction: v.optional(v.number()),
-    confidence: v.number(),
+    probability: v.number(),
     score: v.optional(v.number()),
     clipsChange: v.optional(v.number()),
   })
