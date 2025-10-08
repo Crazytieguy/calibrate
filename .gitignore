@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 CLAUDE.local.md
+.env.production
 .pnpm-store
 playwright-report
 test-results
