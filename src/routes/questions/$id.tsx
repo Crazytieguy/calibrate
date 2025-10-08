@@ -3,7 +3,7 @@ import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Calendar, TrendingUp, CheckCircle } from "lucide-react";
+import { ArrowLeft, Calendar, TrendingUp, CheckCircle, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { api } from "../../../convex/_generated/api";
@@ -102,12 +102,16 @@ function QuestionDetailPage() {
           </span>
         </div>
         {question.status === "resolved" && question.resolution !== undefined && (
-          <div className="alert alert-info mt-4">
-            <TrendingUp className="w-5 h-5" />
-            <span>
-              <strong>Resolved:</strong>{" "}
-              {question.resolution ? "Yes" : "No"}
-            </span>
+          <div className="mt-4 px-4 py-3 bg-success/10 border border-success/20 rounded-lg flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-4 h-4 text-success" />
+            </div>
+            <div>
+              <div className="font-semibold text-sm">Question Resolved</div>
+              <div className="text-sm opacity-80">
+                Outcome: <strong>{question.resolution ? "Yes" : "No"}</strong>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -131,14 +135,21 @@ function QuestionDetailPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="table">
+            <table className="table table-zebra">
               <thead>
                 <tr>
                   <th>User</th>
                   <th>Probability</th>
                   {question.status === "resolved" && (
                     <>
-                      <th>Score</th>
+                      <th>
+                        <div className="flex items-center gap-1">
+                          Score
+                          <div className="tooltip tooltip-right" data-tip="Time-weighted score relative to 50% baseline. Positive = better than random.">
+                            <HelpCircle className="w-4 h-4 opacity-50 hover:opacity-100 cursor-help" />
+                          </div>
+                        </div>
+                      </th>
                       <th>Clips Change</th>
                     </>
                   )}
@@ -146,22 +157,34 @@ function QuestionDetailPage() {
               </thead>
               <tbody>
                 {allForecasts.map((forecast) => (
-                  <tr key={forecast._id}>
-                    <td>{forecast.userName}</td>
-                    <td>{forecast.probability}%</td>
+                  <tr key={forecast._id} className="hover">
+                    <td className="font-medium">{forecast.userName}</td>
+                    <td>
+                      <span className="badge badge-primary badge-outline">
+                        {forecast.probability}%
+                      </span>
+                    </td>
                     {question.status === "resolved" && (
                       <>
-                        <td>{forecast.score?.toFixed(1) ?? "—"}</td>
-                        <td
-                          className={
-                            (forecast.clipsChange ?? 0) > 0
-                              ? "text-success"
-                              : "text-error"
-                          }
-                        >
-                          {forecast.clipsChange !== undefined
-                            ? `${forecast.clipsChange > 0 ? "+" : ""}${forecast.clipsChange} 📎`
-                            : "—"}
+                        <td>
+                          <span className="font-mono text-sm">
+                            {forecast.score?.toFixed(1) ?? "—"}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`font-semibold ${
+                              (forecast.clipsChange ?? 0) > 0
+                                ? "text-success"
+                                : (forecast.clipsChange ?? 0) < 0
+                                  ? "text-error"
+                                  : ""
+                            }`}
+                          >
+                            {forecast.clipsChange !== undefined
+                              ? `${forecast.clipsChange > 0 ? "+" : ""}${forecast.clipsChange} 📎`
+                              : "—"}
+                          </span>
                         </td>
                       </>
                     )}
@@ -224,33 +247,35 @@ function ForecastForm({
           <div className="space-y-6">
             <form.Field name="probability">
               {(field) => (
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">
-                      Probability of "Yes" ({field.state.value}%)
+                <div className="space-y-3">
+                  <div className="flex justify-between items-baseline">
+                    <label htmlFor="probability" className="text-sm font-medium">
+                      Probability of "Yes"
+                    </label>
+                    <span className="text-3xl font-bold text-primary">
+                      {field.state.value}%
                     </span>
-                  </label>
+                  </div>
                   <input
+                    id="probability"
                     type="range"
                     min="1"
                     max="99"
-                    className="range range-primary"
+                    className="range range-primary w-full"
                     value={field.state.value}
                     onChange={(e) =>
                       field.handleChange(e.target.valueAsNumber)
                     }
                   />
-                  <div className="flex justify-between text-xs opacity-70 mt-1">
-                    <span>1% (Very Unlikely)</span>
-                    <span>50%</span>
-                    <span>99% (Very Likely)</span>
+                  <div className="flex justify-between text-xs opacity-60 px-1">
+                    <span>1%<br/><span className="text-[10px]">Very Unlikely</span></span>
+                    <span>50%<br/><span className="text-[10px]">Neutral</span></span>
+                    <span>99%<br/><span className="text-[10px]">Very Likely</span></span>
                   </div>
                   {!field.state.meta.isValid && (
-                    <label className="label">
-                      <span className="label-text-alt text-error">
-                        Probability must be between 1% and 99%
-                      </span>
-                    </label>
+                    <p className="text-sm text-error">
+                      Probability must be between 1% and 99%
+                    </p>
                   )}
                 </div>
               )}
@@ -258,7 +283,7 @@ function ForecastForm({
 
             <button
               type="submit"
-              className="btn btn-primary w-full"
+              className="btn btn-primary w-full sm:w-auto sm:px-12"
               disabled={!form.state.canSubmit || form.state.isSubmitting}
             >
               {form.state.isSubmitting

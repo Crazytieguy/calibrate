@@ -19,9 +19,9 @@ function LeaderboardPage() {
   const { data: leaderboard } = useSuspenseQuery(leaderboardQueryOptions);
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="w-6 h-6 text-yellow-500" />;
-    if (rank === 2) return <Medal className="w-6 h-6 text-gray-400" />;
-    if (rank === 3) return <Award className="w-6 h-6 text-orange-600" />;
+    if (rank === 1) return <Trophy className="w-6 h-6 text-warning" />;
+    if (rank === 2) return <Medal className="w-6 h-6 text-base-content/50" />;
+    if (rank === 3) return <Award className="w-6 h-6 text-accent" />;
     return null;
   };
 
@@ -34,16 +34,20 @@ function LeaderboardPage() {
 
       {leaderboard.length === 0 ? (
         <div className="not-prose">
-          <div className="p-8 bg-base-200 rounded-lg text-center">
-            <p className="opacity-70">
-              No users on the leaderboard yet. Start forecasting!
+          <div className="flex flex-col items-center justify-center py-16 px-8 bg-base-200 rounded-lg border-2 border-dashed border-base-300">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Trophy className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">No rankings yet</h2>
+            <p className="text-base-content/70 text-center max-w-md">
+              The leaderboard will populate as users make forecasts and earn clips. Be the first to climb the ranks!
             </p>
           </div>
         </div>
       ) : (
         <div className="not-prose">
           <div className="overflow-x-auto">
-            <table className="table">
+            <table className="table table-zebra">
               <thead>
                 <tr>
                   <th>Rank</th>
@@ -53,10 +57,7 @@ function LeaderboardPage() {
               </thead>
               <tbody>
                 {leaderboard.map((entry) => (
-                  <tr
-                    key={entry.rank}
-                    className={entry.rank <= 3 ? "bg-base-200" : ""}
-                  >
+                  <tr key={entry.rank} className="hover">
                     <td>
                       <div className="flex items-center gap-2">
                         {getRankIcon(entry.rank)}

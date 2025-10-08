@@ -78,22 +78,24 @@ function RootComponent() {
                       </Link>
                     </div>
                     <div className="navbar-center hidden lg:flex">
-                      <nav className="flex gap-2">
+                      <nav role="tablist" className="tabs tabs-boxed">
                         <Link
                           to="/"
-                          className="btn btn-ghost"
+                          role="tab"
+                          className="tab"
                           activeOptions={{ exact: true }}
                           activeProps={{
-                            className: "btn btn-ghost btn-active",
+                            className: "tab tab-active",
                           }}
                         >
                           Questions
                         </Link>
                         <Link
                           to="/leaderboard"
-                          className="btn btn-ghost"
+                          role="tab"
+                          className="tab"
                           activeProps={{
-                            className: "btn btn-ghost btn-active",
+                            className: "tab tab-active",
                           }}
                         >
                           Leaderboard
@@ -124,17 +126,16 @@ function RootComponent() {
                   ></label>
                   <div className="menu p-4 w-64 min-h-full bg-base-200 text-base-content flex flex-col">
                     <div className="flex-1">
-                      <div className="menu-title mb-4">Menu</div>
-                      <ul className="space-y-2">
+                      <div className="text-sm font-semibold mb-4 px-4 opacity-70">Menu</div>
+                      <ul className="menu w-full">
                         <li>
                           <Link
                             to="/"
                             onClick={() => setIsSidebarOpen(false)}
                             activeOptions={{ exact: true }}
                             activeProps={{
-                              className: "active",
+                              className: "menu-active",
                             }}
-                            className="flex items-center p-2"
                           >
                             Questions
                           </Link>
@@ -144,9 +145,8 @@ function RootComponent() {
                             to="/leaderboard"
                             onClick={() => setIsSidebarOpen(false)}
                             activeProps={{
-                              className: "active",
+                              className: "menu-active",
                             }}
-                            className="flex items-center p-2"
                           >
                             Leaderboard
                           </Link>

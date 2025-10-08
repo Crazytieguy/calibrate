@@ -57,7 +57,7 @@ test("time-weighted scoring: single forecast", async () => {
 test("time-weighted scoring: multiple forecasts", async () => {
   const t = convexTest(schema, modules);
 
-  const userId = await t.run(async (ctx) => {
+  await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
       clerkId: "test-user-2",
       name: "Test User 2",

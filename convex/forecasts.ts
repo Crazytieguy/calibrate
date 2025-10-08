@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getCurrentUserOrCrash } from "./users";
+import { getCurrentUserOrCrash, getCurrentUserOrNull } from "./users";
 
 export const submit = mutation({
   args: {
@@ -38,7 +38,11 @@ export const submit = mutation({
 export const getForQuestion = query({
   args: { questionId: v.id("questions") },
   handler: async (ctx, { questionId }) => {
-    const user = await getCurrentUserOrCrash(ctx);
+    const user = await getCurrentUserOrNull(ctx);
+
+    if (!user) {
+      return null;
+    }
 
     return await ctx.db
       .query("forecasts")

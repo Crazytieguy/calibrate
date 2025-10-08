@@ -12,7 +12,8 @@ export const Route = createFileRoute("/questions/new")({
 const questionSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  closeTime: z.string().min(1, "Close date is required"),
+  closeDate: z.string().min(1, "Close date is required"),
+  closeTime: z.string().min(1, "Close time is required"),
 });
 
 function NewQuestionPage() {
@@ -23,13 +24,14 @@ function NewQuestionPage() {
     defaultValues: {
       title: "",
       description: "",
-      closeTime: "",
+      closeDate: "",
+      closeTime: "23:59",
     },
     validators: {
       onChange: questionSchema,
     },
     onSubmit: async ({ value }) => {
-      const closeTimeMs = new Date(value.closeTime).getTime();
+      const closeTimeMs = new Date(`${value.closeDate}T${value.closeTime}`).getTime();
 
       await createQuestion({
         title: value.title,
@@ -65,24 +67,27 @@ function NewQuestionPage() {
         <div className="space-y-6 max-w-2xl">
           <form.Field name="title">
             {(field) => (
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Question Title</span>
+              <div className="space-y-2">
+                <label htmlFor="title" className="block text-sm font-medium">
+                  Question Title
                 </label>
                 <input
+                  id="title"
                   type="text"
-                  className="input input-bordered w-full"
+                  className={`input input-bordered w-full ${
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                      ? "input-error"
+                      : ""
+                  }`}
                   placeholder="Will X happen by Y date?"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                 />
-                {!field.state.meta.isValid && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">
-                      {field.state.meta.errors.map((e) => e.message).join(", ")}
-                    </span>
-                  </label>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <p className="text-sm text-error mt-1">
+                    {field.state.meta.errors.map((e) => e?.message).join(", ")}
+                  </p>
                 )}
               </div>
             )}
@@ -90,23 +95,54 @@ function NewQuestionPage() {
 
           <form.Field name="description">
             {(field) => (
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Description</span>
+              <div className="space-y-2">
+                <label htmlFor="description" className="block text-sm font-medium">
+                  Description
                 </label>
                 <textarea
-                  className="textarea textarea-bordered h-24"
+                  id="description"
+                  className={`textarea textarea-bordered h-24 w-full ${
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                      ? "textarea-error"
+                      : ""
+                  }`}
                   placeholder="Provide context and resolution criteria..."
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                 />
-                {!field.state.meta.isValid && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">
-                      {field.state.meta.errors.map((e) => e.message).join(", ")}
-                    </span>
-                  </label>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <p className="text-sm text-error mt-1">
+                    {field.state.meta.errors.map((e) => e?.message).join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="closeDate">
+            {(field) => (
+              <div className="space-y-2">
+                <label htmlFor="closeDate" className="block text-sm font-medium">
+                  Close Date
+                </label>
+                <input
+                  id="closeDate"
+                  type="date"
+                  className={`input input-bordered w-full ${
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                      ? "input-error"
+                      : ""
+                  }`}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  min={new Date().toISOString().split("T")[0]}
+                />
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <p className="text-sm text-error mt-1">
+                    {field.state.meta.errors.map((e) => e?.message).join(", ")}
+                  </p>
                 )}
               </div>
             )}
@@ -114,29 +150,37 @@ function NewQuestionPage() {
 
           <form.Field name="closeTime">
             {(field) => (
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Close Date & Time</span>
+              <div className="space-y-2">
+                <label htmlFor="closeTime" className="block text-sm font-medium">
+                  Close Time
                 </label>
-                <input
-                  type="datetime-local"
-                  className="input input-bordered w-full"
+                <select
+                  id="closeTime"
+                  className={`select select-bordered w-full ${
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                      ? "select-error"
+                      : ""
+                  }`}
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
-                />
-                {!field.state.meta.isValid && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">
-                      {field.state.meta.errors.map((e) => e.message).join(", ")}
-                    </span>
-                  </label>
+                >
+                  <option value="23:59">End of Day (11:59 PM)</option>
+                  <option value="12:00">Noon (12:00 PM)</option>
+                  <option value="09:00">Morning (9:00 AM)</option>
+                  <option value="17:00">Evening (5:00 PM)</option>
+                  <option value="00:00">Midnight (12:00 AM)</option>
+                </select>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <p className="text-sm text-error mt-1">
+                    {field.state.meta.errors.map((e) => e?.message).join(", ")}
+                  </p>
                 )}
               </div>
             )}
           </form.Field>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 pt-2">
             <button
               type="submit"
               className="btn btn-primary"
